@@ -12,6 +12,10 @@
   "license": "ISC",
   "dependencies": {
     "node-telegram-bot-api": "^0.60.0",
-    "nodemon": "^2.0.20"
+    "nodemon": "^2.0.20",
+    "pg": "^8.8.0",
+    "pg-hstore": "^2.3.4",
+    "save": "^2.9.0",
+    "sequelize": "^6.28.0"
   }
 }
