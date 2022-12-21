@@ -1,5 +1,10 @@
 const sequelize = require('./db');
 const userModel = require('./models');
+const { Op } = require('sequelize');
+
+const DISTRIBUTION_DATE = new Date(2022, 11, 22, 0, 38, 0);
+const DELAY = 10000;
+
 
 const TelegramApi = require('node-telegram-bot-api');
 const TOKEN = '5876855739:AAHX3LHy1aeOKkkl-FNX6dhlC98BsXF9Jd0';
@@ -52,7 +57,7 @@ const start = async () => {
     [
         {
             command: '/start',
-            description: 'Принять участие в жеребьевке' 
+            description: 'Приготовиться к игре!' 
         },
         {
             command: '/count',
@@ -61,6 +66,62 @@ const start = async () => {
 
     ])
 
+    const userDistribution = async (users) => {
+        let arr2 = users.sort(() => (Math.random() > .5) ? 1 : -1);
+
+        let arr3 = arr2.reduce( (accumulator, currentValue, index, array) => {
+        if (array.length === index+1) {
+            accumulator.push(currentValue)
+            accumulator.push(array[0])
+            return accumulator
+        }
+        if ( index > 0 ) {
+            if (accumulator?.length === 0) {
+            accumulator.push(currentValue)
+            return accumulator
+            }
+            accumulator.push(currentValue)
+            return accumulator
+        } 
+        return accumulator
+        }, [] );
+
+        arr2.forEach(
+        async(user, index) => {
+            await userModel.update({ recipientId: arr3[index].userId, recipientName: arr3[index].userName}, {
+            where: {
+            userId: user.userId
+            }
+            });
+            await bot.sendMessage(user.userId, `Привет ${user.userName}! твой адресат ${arr3[index].userName || arr3[index].userId}!`);
+        }
+        )
+    }
+
+    await userModel.update({ recipientId: null, recipientName: null}, {
+        where: {
+            userId: {
+                        [Op.ne]: null
+                    }
+        }
+    });
+
+async function recurse () {
+    const currentDate = new Date();
+    if(currentDate < DISTRIBUTION_DATE) {
+      setTimeout(() => { 
+        recurse();
+      }, DELAY);
+
+    }
+    else {
+    const allUsersDb = await userModel.findAll({attributes: ['userId', 'userName']})
+    const allUsersRaw = allUsersDb.map(user => user.dataValues);
+    await userDistribution(allUsersRaw);
+    }
+}
+
+recurse();
 
 bot.on('message',async (msg) => {
 
@@ -80,8 +141,13 @@ bot.on('message',async (msg) => {
 
     if(text && text.includes('start') && type === 'private') {
         const player = await userModel.findOne({where: {userId: userId}})
-        console.log(player);
         if(player) {
+            if(new Date() > DISTRIBUTION_DATE) {
+                // const photos = await bot.getUserProfilePhotos(player.recipientId);
+                // console.log(photos.photos[0][0].file_id);
+                // await bot.sendPhoto(chatId, photos.photos[0][0].file_id)
+                return bot.sendMessage(chatId, `${userName}, ты в игре! Твой адресат ${player.recipientName}`);
+            } 
             await bot.sendMessage(chatId, `${userName}, ты в игре! Жди 25 декабря, я пришлю тебе адресата.`, gameContinueOptions);
         } else {
             await bot.sendMessage(chatId, 
@@ -90,6 +156,12 @@ bot.on('message',async (msg) => {
                 );
         }
             
+    }
+
+    if(text && text.includes('count')) {
+        const allUsersDb = await userModel.findAll({attributes: ['userId', 'userName']})
+        const count = allUsersDb.map(user => user.dataValues).length;
+        return bot.sendMessage(chatId, `Всего участников в игре: ${count}`)    
     }
 })
 
@@ -117,7 +189,7 @@ bot.on('callback_query', async msg => {
     if (msg.data === 'recipient') {
         if(player) {
             if(player.recipientId) {
-                await bot.sendMessage(userId, `${userName}, твой адресат ${player.recipientName}!`);
+                await bot.sendMessage(userId, `${userName}, твой адресат ${player.recipientName || player.recipientId}!`);
             } else  {
                 await bot.sendMessage(userId, `${userName}, адресата еще нет!`);
             }
@@ -127,6 +199,9 @@ bot.on('callback_query', async msg => {
     }
 
     if (msg.data === 'out') {
+        if(new Date() > DISTRIBUTION_DATE) {
+        return bot.sendMessage(userId, `${userName}, Распределние закончено, ты не можешь покинуть игру!`);    
+        }
         userModel.destroy({where: {userId}})
         return bot.sendMessage(userId, `${userName}, очень жаль!`);
     }

@@ -6,7 +6,7 @@ const user = sequelize.define('user', {
         userId: {type: DataTypes.INTEGER, unique: true,},
         chatId: {type: DataTypes.INTEGER,},
         userName: {type: DataTypes.STRING,},
-        recipientId: {type: DataTypes.INTEGER, unique: true,},
+        recipientId: {type: DataTypes.INTEGER,},
         recipientName: {type: DataTypes.STRING, defaultValue: null},
     });
 module.exports = user
