@@ -152,7 +152,19 @@ const start = async () => {
 
         if(text && text.includes('start') && type === 'group') {
             try {
-                await bot.sendMessage(userId, `Привет ${userName}! Жди адресата!`);
+                const player = await userModel.findOne({where: {userId: userId}})
+                if(player) {
+                    if(player.recipientId) {
+                           await bot.sendMessage(userId, `${userName}, ты в игре! Твой адресат ${player.recipientName}`, gameContinueOptions);
+                        } else {
+                            await bot.sendMessage(userId, `Привет ${userName}! Жди адресата!`);
+                        }
+                } else {
+                    await bot.sendMessage(userId, 
+                    `Привет ${userName}! Ты собираешься стать тайным сантой! Нажми "Стать Сантой", чтобы записать себя в список участников игры. Ты можешь посмотреть своего адресата, когда список заполнится. Заявки принимаются до 25 декабря. Если передумал, можешь выйти из игры. 25 числа ты узнаешь своего адресата.`,
+                    gameStartOptions
+                    );
+                }
             } catch (error) {
                 await bot.sendMessage(chatId, `Ты собираешься стать тайным сантой 56, для начала подружись с ботом!`, requestOptions);
             }
