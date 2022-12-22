@@ -8,5 +8,6 @@ const user = sequelize.define('user', {
         userName: {type: DataTypes.STRING,},
         recipientId: {type: DataTypes.INTEGER,},
         recipientName: {type: DataTypes.STRING, defaultValue: null},
+        wishList: {type: DataTypes.STRING, defaultValue: null},
     });
 module.exports = user
