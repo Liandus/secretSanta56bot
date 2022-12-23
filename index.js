@@ -117,13 +117,13 @@ const start = async () => {
         )
     }
 
-    await userModel.update({ recipientId: null, recipientName: null}, {
-        where: {
-            userId: {
-                        [Op.ne]: null
-                    }
-        }
-    });
+    // await userModel.update({ recipientId: null, recipientName: null}, {
+    //     where: {
+    //         userId: {
+    //                     [Op.ne]: null
+    //                 }
+    //     }
+    // });
 
     async function recurse () {
         const currentDate = new Date();
@@ -143,16 +143,22 @@ const start = async () => {
     recurse();
 
     bot.on('message',async (msg) => {
-
+        
         const text = msg.text;
         const chatId = msg.chat.id;
         const type = msg.chat.type;
         const userName = msg.from.username; 
         const userId = msg.from.id; 
 
-        if(text && text.includes('start') && type === 'group') {
+         console.log(msg);
+
+
+        if(text && text.includes('start') && type.includes('group')) {
+             console.log(text);
+             console.log(type);
             try {
                 const player = await userModel.findOne({where: {userId: userId}})
+                console.log(player);
                 if(player) {
                     if(player.recipientId) {
                            await bot.sendMessage(userId, `${userName}, ты в игре! Твой адресат ${player.recipientName}`, gameContinueOptions);
