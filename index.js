@@ -73,7 +73,7 @@ const sendMessage = async (id, message, buttons) => {
 const start = async () => {
     try {
         await sequelize.authenticate();
-        // await sequelize.drop();
+        //await sequelize.drop();
         await sequelize.sync();
     } catch (error) {
         console.log('ошибка подключения к базе');
@@ -117,14 +117,6 @@ const start = async () => {
         )
     }
 
-    // await userModel.update({ recipientId: null, recipientName: null}, {
-    //     where: {
-    //         userId: {
-    //                     [Op.ne]: null
-    //                 }
-    //     }
-    // });
-
     async function recurse () {
         const currentDate = new Date();
         if(currentDate < DISTRIBUTION_DATE) {
@@ -149,25 +141,21 @@ const start = async () => {
         const type = msg.chat.type;
         const userName = msg.from.username; 
         const userId = msg.from.id; 
-
-         console.log(msg);
-
+        const firstName = msg.from.first_name;
 
         if(text && text.includes('start') && type.includes('group')) {
-             console.log(text);
-             console.log(type);
             try {
                 const player = await userModel.findOne({where: {userId: userId}})
                 console.log(player);
                 if(player) {
                     if(player.recipientId) {
-                           await bot.sendMessage(userId, `${userName}, ты в игре! Твой адресат ${player.recipientName}`, gameContinueOptions);
+                           await bot.sendMessage(userId, `${userName || firstName}, ты в игре! Твой адресат ${player.recipientName}`, gameContinueOptions);
                         } else {
-                            await bot.sendMessage(userId, `Привет ${userName}! Жди адресата!`);
+                            await bot.sendMessage(userId, `Привет ${userName || firstName}! Жди адресата!`);
                         }
                 } else {
                     await bot.sendMessage(userId, 
-                    `Привет ${userName}! Ты собираешься стать тайным сантой! Нажми "Стать Сантой", чтобы записать себя в список участников игры. Ты можешь посмотреть своего адресата, когда список заполнится. Заявки принимаются до 25 декабря. Если передумал, можешь выйти из игры. 25 числа ты узнаешь своего адресата.`,
+                    `Привет ${userName || firstName}! Ты собираешься стать тайным сантой! Нажми "Стать Сантой", чтобы записать себя в список участников игры. Ты можешь посмотреть своего адресата, когда список заполнится. Заявки принимаются до 25 декабря. Если передумал, можешь выйти из игры. 25 числа ты узнаешь своего адресата.`,
                     gameStartOptions
                     );
                 }
@@ -180,7 +168,7 @@ const start = async () => {
             const player = await userModel.findOne({where: {userId: userId}})
             if(player) {
                 await userModel.update({ wishList: text,}, {where: {userId: userId}});
-                return sendMessage(chatId, `${userName}, я сохранил твой вишлист!`);
+                return sendMessage(chatId, `${userName || firstName}, я сохранил твой вишлист!`);
             }
         }
 
@@ -188,12 +176,12 @@ const start = async () => {
             const player = await userModel.findOne({where: {userId: userId}})
             if(player) {
                 if(new Date() > DISTRIBUTION_DATE) {
-                        return sendMessage(chatId, `${userName}, ты в игре! Твой адресат ${player.recipientName}`, gameContinueOptions);
+                        return sendMessage(chatId, `${userName || firstName}, ты в игре! Твой адресат ${player.recipientName}`, gameContinueOptions);
                 } 
-                await sendMessage(chatId, `${userName}, ты в игре! Жди 25 декабря, я пришлю тебе адресата.`, gameContinueOptions);
+                await sendMessage(chatId, `${userName || firstName}, ты в игре! Жди 25 декабря, я пришлю тебе адресата.`, gameContinueOptions);
             } else {
                 await sendMessage(chatId, 
-                    `Привет ${userName}! Ты собираешься стать тайным сантой! Нажми "Стать Сантой", чтобы записать себя в список участников игры. Ты можешь посмотреть своего адресата, когда список заполнится. Заявки принимаются до 25 декабря. Если передумал, можешь выйти из игры. 25 числа ты узнаешь своего адресата.`,
+                    `Привет ${userName || firstName}! Ты собираешься стать тайным сантой! Нажми "Стать Сантой", чтобы записать себя в список участников игры. Ты можешь посмотреть своего адресата, когда список заполнится. Заявки принимаются до 25 декабря. Если передумал, можешь выйти из игры. 25 числа ты узнаешь своего адресата.`,
                     gameStartOptions
                     );
             }
@@ -212,10 +200,11 @@ const start = async () => {
         const chatId = msg.message.chat.id;
         const userName = msg.from.username; 
         const userId = msg.from.id;
+        const firstName = msg.from.first_name;
         const player = await userModel.findOne({where: {userId}})
         if (msg.data === 'go') {
             if(player) {
-                await sendMessage(userId, `${userName}, ты уже записался!`);
+                await sendMessage(userId, `${userName || firstName}, ты уже записался!`);
         
             } else {
                 await userModel.create({
@@ -224,27 +213,27 @@ const start = async () => {
                                 userName,
                                 })
             }
-            await sendMessage(chatId, `${userName}, ты в игре! Жди 25 декабря, я пришлю тебе адресата.`, gameContinueOptions);
+            await sendMessage(chatId, `${userName || firstName}, ты в игре! Жди 25 декабря, я пришлю тебе адресата.`, gameContinueOptions);
         }
 
         if (msg.data === 'recipient') {
             if(player) {
                 if(player.recipientId) {
-                    await sendMessage(userId, `${userName}, твой адресат ${player.recipientName || player.recipientId}!`);
+                    await sendMessage(userId, `${userName || firstName}, твой адресат ${player.recipientName || player.recipientId}!`);
                 } else  {
-                    await sendMessage(userId, `${userName}, адресата еще нет!`);
+                    await sendMessage(userId, `${userName || firstName}, адресата еще нет!`);
                 }
             } else {
-                await sendMessage(userId, `${userName}, не в игре!`);
+                await sendMessage(userId, `${userName || firstName}, не в игре!`);
             }
         }
 
         if (msg.data === 'out') {
             if(new Date() > DISTRIBUTION_DATE) {
-            return sendMessage(userId, `${userName}, Распределние закончено, ты не можешь покинуть игру! Иначе кто-то останется без подарка!`);    
+            return sendMessage(userId, `${userName || firstName}, Распределние закончено, ты не можешь покинуть игру! Иначе кто-то останется без подарка!`);    
             }
             userModel.destroy({where: {userId}})
-            return sendMessage(userId, `${userName}, очень жаль!`);
+            return sendMessage(userId, `${userName || firstName} , очень жаль!`);
         }
 
         if (msg.data === 'recWish') {
@@ -252,35 +241,35 @@ const start = async () => {
                 if(player.recipientId) {
                     const recipient = await userModel.findOne({where: {userId: player.recipientId}})
                     if (recipient.wishList) {
-                        await sendMessage(userId, `${userName}, держи вишлист адресата ${player.recipientName || player.recipientId}: ${recipient.wishList}`);    
+                        await sendMessage(userId, `${userName || firstName}, держи вишлист адресата ${player.recipientName || player.recipientId}: ${recipient.wishList}`);    
                     } else {
-                        await sendMessage(userId, `${userName}, у твоего адресата ${player.recipientName || player.recipientId} еще нет вишлиста!`);
+                        await sendMessage(userId, `${userName || firstName}, у твоего адресата ${player.recipientName || player.recipientId} еще нет вишлиста!`);
                     }
                 } else  {
-                    await sendMessage(userId, `${userName}, адресата еще нет!`);
+                    await sendMessage(userId, `${userName || firstName}, адресата еще нет!`);
                 }
             } else {
-                await sendMessage(userId, `${userName}, не в игре!`);
+                await sendMessage(userId, `${userName || firstName}, не в игре!`);
             }
         }
 
         if (msg.data === 'userWish') {
             if(player) {
                 if(player.wishList) {
-                    await sendMessage(userId, `${userName}, вот твой вишлист: ${player.wishList}`, gameEditOptions);    
+                    await sendMessage(userId, `${userName || firstName}, вот твой ${player.wishList}`, gameEditOptions);    
                 } else {
-                    await sendMessage(userId, `${userName}, У тебя нет вишлиста!`, gameEditOptions);
+                    await sendMessage(userId, `${userName || firstName}, У тебя нет вишлиста!`, gameEditOptions);
                 }
             } else {
-                await sendMessage(userId, `${userName}, не в игре!`);
+                await sendMessage(userId, `${userName || firstName}, не в игре!`);
             }
         }
 
         if (msg.data === 'edit') {
             if(player) {
-                await sendMessage(userId, `${userName}, чтобы добавить свой список подарков, отправь его в своем в следующем сообщении, начиная со слов "Вишлист:", иначе я тебя не пойму!`);
+                await sendMessage(userId, `${userName || firstName}, чтобы добавить свой список подарков, отправь его в своем в следующем сообщении, начиная со слов "Вишлист:", иначе я тебя не пойму!`);
             } else {
-                await sendMessage(userId, `${userName}, не в игре!`);
+                await sendMessage(userId, `${userName || firstName}, не в игре!`);
             }
         }
     })
