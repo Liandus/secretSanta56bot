@@ -217,9 +217,12 @@ const start = async () => {
         }
 
         if (msg.data === 'recipient') {
+
+
             if(player) {
                 if(player.recipientId) {
-                    await sendMessage(userId, `${userName || firstName}, твой адресат ${player.recipientName || player.recipientId}!`);
+                    const chatMember = await bot.getChatMember(player.recipientId, player.recipientId)
+                    await sendMessage(userId, `${userName || firstName}, твой адресат ${player.recipientName || chatMember.user.first_name || player.recipientId}!`);
                 } else  {
                     await sendMessage(userId, `${userName || firstName}, адресата еще нет!`);
                 }
